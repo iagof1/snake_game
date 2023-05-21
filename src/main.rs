@@ -6,7 +6,7 @@ use eframe::egui;
 use egui::*;
 
 const SNAKE_BLOCK_SIZE: f32 = 10.0;
-const SNAKE_INITIAl_SIZE: i32 = 4;
+const SNAKE_INITIAL_SIZE: i32 = 4;
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
@@ -38,7 +38,7 @@ impl Snake {
     fn new() -> Self {
         let mut body: Vec<Rect> = vec![];
 
-        for i in 0..SNAKE_INITIAl_SIZE {
+        for i in 0..SNAKE_INITIAL_SIZE {
             let rect = Rect::from_min_max(
                 Pos2::new(100.0 + (i as f32 * SNAKE_BLOCK_SIZE), 100.0),
                 Pos2::new(
@@ -61,27 +61,27 @@ impl Snake {
                 self.body.remove(0);
                 self.body.push(self.body.last().unwrap().translate(Vec2 {
                     x: 0.0,
-                    y: -SNAKE_BLOCK_SIZE,
+                    y: -SNAKE_BLOCK_SIZE + 5.,
                 }));
             }
             SnakeDirection::Down => {
                 self.body.remove(0);
                 self.body.push(self.body.last().unwrap().translate(Vec2 {
                     x: 0.0,
-                    y: SNAKE_BLOCK_SIZE,
+                    y: SNAKE_BLOCK_SIZE - 5.,
                 }));
             }
             SnakeDirection::Left => {
                 self.body.remove(0);
                 self.body.push(self.body.last().unwrap().translate(Vec2 {
-                    x: -SNAKE_BLOCK_SIZE,
+                    x: -SNAKE_BLOCK_SIZE + 5.,
                     y: 0.0,
                 }));
             }
             SnakeDirection::Right => {
                 self.body.remove(0);
                 self.body.push(self.body.last().unwrap().translate(Vec2 {
-                    x: SNAKE_BLOCK_SIZE,
+                    x: SNAKE_BLOCK_SIZE - 5.,
                     y: 0.0,
                 }));
             }
@@ -116,17 +116,19 @@ impl Snake {
 
 struct SnakeGame {
     snake: Snake,
+    game_over: bool,
 }
 
 impl SnakeGame {
     fn new() -> Self {
         let snake = Snake::new();
-        Self { snake }
+        let game_over = false;
+        Self { snake, game_over }
     }
 }
 
 impl eframe::App for SnakeGame {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         CentralPanel::default().show(ctx, |ui| {
             ctx.request_repaint();
             std::thread::sleep(Duration::from_millis(20));
@@ -148,7 +150,24 @@ impl eframe::App for SnakeGame {
                 self.snake.change_direction(SnakeDirection::Right);
             }
 
-            self.snake.walk();
+            if self.snake.body.first().unwrap().x_range().start().to_owned() >=
+            ui.available_size().x ||
+            self.snake.body.first().unwrap().y_range().start().to_owned() >=
+            ui.available_size().y ||
+            self.snake.body.first().unwrap().x_range().start().to_owned() == 0.
+            || self.snake.body.first().unwrap().y_range().start().to_owned() == 0. {
+                self.game_over = true;
+            }
+
+            if self.game_over {
+                ui.centered_and_justified(|ui| {
+                    ui.heading("Game Over!");
+                });
+            }
+
+            if !self.game_over {
+                self.snake.walk();
+            }
         });
     }
 }
